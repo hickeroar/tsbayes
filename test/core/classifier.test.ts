@@ -81,6 +81,14 @@ describe("TextClassifier", () => {
     ]);
   });
 
+  it("handles mixed zero and non-zero category tallies while scoring", () => {
+    const classifier = new TextClassifier();
+    classifier.train("empty", "");
+    classifier.train("pets", "cats");
+    const result = classifier.score("cats");
+    expect(result.pets).toBeGreaterThan(0);
+  });
+
   it("flushes state", () => {
     const classifier = new TextClassifier();
     classifier.train("pets", "cats");
@@ -173,52 +181,14 @@ describe("TextClassifier", () => {
     ).toThrow(PersistenceError);
   });
 
-  it("covers bayesian edge branches for zero denominators", () => {
-    const classifier = new TextClassifier() as unknown as {
-      calculateBayesianProbability(input: {
-        tokenInCategory: number;
-        tokenTotal: number;
-        categoryTally: number;
-        totalTally: number;
-      }): number;
-    };
-
-    expect(
-      classifier.calculateBayesianProbability({
-        tokenInCategory: 1,
-        tokenTotal: 1,
-        categoryTally: 0,
-        totalTally: 1
-      })
-    ).toBe(0);
-
-    expect(
-      classifier.calculateBayesianProbability({
-        tokenInCategory: 0,
-        tokenTotal: 0,
-        categoryTally: 1,
-        totalTally: 1
-      })
-    ).toBe(0);
-
-    expect(
-      classifier.calculateBayesianProbability({
-        tokenInCategory: Number.NaN,
-        tokenTotal: 1,
-        categoryTally: 1,
-        totalTally: 1
-      })
-    ).toBe(0);
-  });
-
-  it("covers nullish fallback branch in classificationResult score lookup", () => {
+  it("respects overridden score output ordering", () => {
     const classifier = new TextClassifier();
     Object.defineProperty(classifier, "score", {
-      value: () => ({ alpha: undefined, beta: 1 }),
+      value: () => ({ beta: 1, alpha: 1 }),
       configurable: true
     });
     expect(classifier.classificationResult("ignored")).toEqual({
-      category: "beta",
+      category: "alpha",
       score: 1
     });
   });

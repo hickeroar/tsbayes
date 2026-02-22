@@ -56,7 +56,9 @@ describe("persistence", () => {
 
   it("rejects non-absolute path for load", async () => {
     const classifier = new TextClassifier();
-    await expect(loadFromFile(classifier, "relative.json")).rejects.toBeInstanceOf(PersistenceError);
+    await expect(loadFromFile(classifier, "relative.json")).rejects.toBeInstanceOf(
+      PersistenceError
+    );
   });
 
   it("rejects invalid json content", async () => {
@@ -65,6 +67,96 @@ describe("persistence", () => {
     const filePath = join(dir, "broken.json");
     await writeFile(filePath, "{not json", "utf8");
     await expect(loadFromFile(classifier, filePath)).rejects.toBeInstanceOf(PersistenceError);
+  });
+
+  it("rejects parseable but invalid model structure", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-structure.json");
+    await writeFile(filePath, JSON.stringify({ version: 1, categories: [] }), "utf8");
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects parseable model that is not an object", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-root.json");
+    await writeFile(filePath, JSON.stringify(["bad"]), "utf8");
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects parseable model with non-numeric version", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-version-type.json");
+    await writeFile(filePath, JSON.stringify({ version: "1", categories: {} }), "utf8");
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects parseable model with non-object category state", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-category-shape.json");
+    await writeFile(filePath, JSON.stringify({ version: 1, categories: { pets: [] } }), "utf8");
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects parseable model with invalid tally type", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-tally-type.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({ version: 1, categories: { pets: { tally: "1", tokens: {} } } }),
+      "utf8"
+    );
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects parseable model with non-object tokens bag", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-tokens-shape.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({ version: 1, categories: { pets: { tally: 1, tokens: [] } } }),
+      "utf8"
+    );
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects parseable model with invalid token count type", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-token-count-type.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({ version: 1, categories: { pets: { tally: 1, tokens: { cat: "1" } } } }),
+      "utf8"
+    );
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects unsupported model version from file", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "unsupported-version.json");
+    await writeFile(filePath, JSON.stringify({ version: 999, categories: {} }), "utf8");
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow("unsupported model version");
   });
 
   it("saves to generated temp file path", async () => {

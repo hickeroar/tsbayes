@@ -9,7 +9,11 @@ const targets = [
   ".github/workflows/ci.yml"
 ];
 
-const forbiddenPatterns = [/\/Users\/ryan\/Developer\//, /reference implementation/i, /ported from/i];
+const forbiddenPatterns = [
+  /\/Users\/ryan\/Developer\//,
+  /reference implementation/i,
+  /ported from/i
+];
 
 const violations = [];
 for (const target of targets) {

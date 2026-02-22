@@ -6,15 +6,23 @@
 2. Install dependencies:
 
    ```bash
-   npm install
+   npm ci
    ```
 
 3. Run quality checks:
 
    ```bash
+   npm run format:check
    npm run lint
    npm run typecheck
    npm run test:coverage
+   npm run build
+   ```
+
+4. Optional local guard before commit:
+
+   ```bash
+   npm run precommit
    ```
 
 ## Pull Request Expectations
@@ -33,3 +41,13 @@
 
 - Use concise, descriptive commit messages.
 - Mention the user-facing intent, not only implementation details.
+- Prefer Conventional Commit prefixes (`feat`, `fix`, `docs`, `chore`, `test`, `refactor`) for cleaner release notes.
+
+## Release Notes Process
+
+- Update `CHANGELOG.md` for user-visible changes before tagging.
+- Ensure `prepublishOnly` succeeds locally:
+
+  ```bash
+  npm run prepublishOnly
+  ```

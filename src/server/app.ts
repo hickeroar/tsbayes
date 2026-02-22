@@ -6,6 +6,21 @@ import { ValidationError } from "../core/errors.js";
 import { Readiness } from "./readiness.js";
 import { checkAuthorization } from "./auth.js";
 
+const MAX_BODY_SIZE_BYTES = 1024 * 1024;
+const CATEGORY_PARAMS_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["category"],
+  properties: {
+    category: {
+      type: "string",
+      minLength: 1,
+      maxLength: 64,
+      pattern: CATEGORY_PATTERN.source
+    }
+  }
+} as const;
+
 export interface AppOptions {
   authToken: string | null;
   classifier?: TextClassifier;
@@ -24,7 +39,7 @@ export function createApp(options: AppOptions): AppContext {
 
   const app = Fastify({
     logger: false,
-    bodyLimit: 1024 * 1024
+    bodyLimit: MAX_BODY_SIZE_BYTES
   });
 
   app.addContentTypeParser("*", { parseAs: "buffer" }, (request, body, done) => {
@@ -53,23 +68,25 @@ export function createApp(options: AppOptions): AppContext {
 
   app.get("/info", () => ({ categories: classifier.categorySummaries() }));
 
-  app.post("/train/:category", async (request, reply) => {
-    const category = (request.params as { category: string }).category;
-    if (!CATEGORY_PATTERN.test(category)) {
-      return reply.code(404).send({ error: "not found" });
+  app.post<{ Params: { category: string } }>(
+    "/train/:category",
+    { schema: { params: CATEGORY_PARAMS_SCHEMA } },
+    async (request, reply) => {
+      const { category } = request.params;
+      classifier.train(category, bodyAsText(request.body));
+      return reply.code(204).send();
     }
-    classifier.train(category, bodyAsText(request.body));
-    return reply.code(204).send();
-  });
+  );
 
-  app.post("/untrain/:category", async (request, reply) => {
-    const category = (request.params as { category: string }).category;
-    if (!CATEGORY_PATTERN.test(category)) {
-      return reply.code(404).send({ error: "not found" });
+  app.post<{ Params: { category: string } }>(
+    "/untrain/:category",
+    { schema: { params: CATEGORY_PARAMS_SCHEMA } },
+    async (request, reply) => {
+      const { category } = request.params;
+      classifier.untrain(category, bodyAsText(request.body));
+      return reply.code(204).send();
     }
-    classifier.untrain(category, bodyAsText(request.body));
-    return reply.code(204).send();
-  });
+  );
 
   app.post("/classify", (request) => classifier.classificationResult(bodyAsText(request.body)));
   app.post("/score", (request) => classifier.score(bodyAsText(request.body)));
@@ -81,6 +98,9 @@ export function createApp(options: AppOptions): AppContext {
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ValidationError) {
       return reply.code(400).send({ error: error.message });
+    }
+    if ((error as { code?: string }).code === "FST_ERR_VALIDATION") {
+      return reply.code(400).send({ error: "invalid request" });
     }
     if ((error as { code?: string }).code === "FST_ERR_CTP_BODY_TOO_LARGE") {
       return reply.code(413).send({ error: "payload too large" });

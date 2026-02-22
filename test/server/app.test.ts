@@ -63,7 +63,7 @@ describe("HTTP API", () => {
     await app.close();
   });
 
-  it("returns 404 for invalid category route values", async () => {
+  it("returns 400 for invalid category route values", async () => {
     const { app } = createApp({ authToken: null });
     await app.ready();
     const response = await app.inject({
@@ -71,8 +71,8 @@ describe("HTTP API", () => {
       url: "/train/invalid*category",
       payload: "text"
     });
-    expect(response.statusCode).toBe(404);
-    expect(response.json()).toEqual({ error: "not found" });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ error: "invalid request" });
     await app.close();
   });
 
@@ -199,7 +199,9 @@ describe("HTTP API", () => {
   });
 
   it("returns 500 when classifier throws unexpected error", async () => {
-    const classifier = new TextClassifier() as TextClassifier & { score(input: string): Record<string, number> };
+    const classifier = new TextClassifier() as TextClassifier & {
+      score(input: string): Record<string, number>;
+    };
     classifier.score = () => {
       throw new Error("boom");
     };
@@ -235,7 +237,7 @@ describe("HTTP API", () => {
     await app.close();
   });
 
-  it("returns 404 for invalid untrain category route value", async () => {
+  it("returns 400 for invalid untrain category route value", async () => {
     const { app } = createApp({ authToken: null });
     await app.ready();
     const response = await app.inject({
@@ -243,8 +245,42 @@ describe("HTTP API", () => {
       url: "/untrain/bad*category",
       payload: "text"
     });
-    expect(response.statusCode).toBe(404);
-    expect(response.json()).toEqual({ error: "not found" });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ error: "invalid request" });
+    await app.close();
+  });
+
+  it("accepts empty bodies for train and untrain", async () => {
+    const { app } = createApp({ authToken: null });
+    await app.ready();
+
+    const trainResponse = await app.inject({
+      method: "POST",
+      url: "/train/empty",
+      payload: ""
+    });
+    expect(trainResponse.statusCode).toBe(204);
+
+    const untrainResponse = await app.inject({
+      method: "POST",
+      url: "/untrain/empty",
+      payload: ""
+    });
+    expect(untrainResponse.statusCode).toBe(204);
+    await app.close();
+  });
+
+  it("rejects malformed bearer format with extra segments", async () => {
+    const { app } = createApp({ authToken: "secret-token" });
+    await app.ready();
+    const response = await app.inject({
+      method: "POST",
+      url: "/train/pets",
+      payload: "cats",
+      headers: { authorization: "Bearer secret-token extra" }
+    });
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({ error: "unauthorized" });
     await app.close();
   });
 

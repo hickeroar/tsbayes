@@ -1,9 +1,15 @@
 # tsbayes
+
 A memory-based, optional-persistence naive Bayesian text classification package and web API for TypeScript/Node.js.
+
+[![CI](https://github.com/hickeroar/tsbayes/actions/workflows/ci.yml/badge.svg)](https://github.com/hickeroar/tsbayes/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/tsbayes.svg)](https://www.npmjs.com/package/tsbayes)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ---
 
 ## Why?
+
 ```text
 Bayesian text classification is useful for things like spam detection,
 sentiment determination, and general category routing.
@@ -18,33 +24,40 @@ Once the model is trained, you can:
 ```
 
 ## Installation
+
 Requires Node.js 20 or newer.
+
+Package usage:
+
+```bash
+npm install tsbayes
+```
+
+Contributor/development setup:
 
 ```bash
 git clone <your-repo-url>
 cd tsbayes
-npm install
-```
-
-If you only want to use `tsbayes` as a library:
-```bash
-npm install tsbayes
+npm ci
 ```
 
 ---
 
 ## Run as an API Server
+
 ```bash
 npm run dev
 ```
 
 Production-style run:
+
 ```bash
 npm run build
 npm run start
 ```
 
 Environment variables:
+
 ```text
 TSBAYES_HOST
 TSBAYES_PORT
@@ -52,6 +65,7 @@ TSBAYES_AUTH_TOKEN
 ```
 
 When `TSBAYES_AUTH_TOKEN` is configured, all API endpoints except `/healthz` and `/readyz` require:
+
 ```text
 Authorization: Bearer <token>
 ```
@@ -59,6 +73,7 @@ Authorization: Bearer <token>
 ## Use as a Library in Your App
 
 Import and create a classifier:
+
 ```ts
 import { TextClassifier, loadFromFile, saveToFile } from "tsbayes";
 
@@ -82,17 +97,21 @@ console.log(loaded.classificationResult("limited offer today"));
 ```
 
 Notes for library usage:
+
 - Classifier operations are safe for concurrent request handling in a single Node process.
 - Scores are relative values; compare scores within the same model.
 - Default tokenization applies Unicode NFKC normalization, lowercasing, non-word splitting, and English stemming.
 - Category names accepted by `train` and `untrain` match `^[-_A-Za-z0-9]{1,64}$`.
 
 File API notes:
+
 - `saveToFile` and `loadFromFile` default to `/tmp/tsbayes-model.json` when no path is provided.
 - Provided file paths must be absolute.
 
 ## Development Checks
+
 ```bash
+npm run format:check
 npm run lint
 npm run typecheck
 npm run test:coverage
@@ -105,24 +124,29 @@ npm run standalone:audit
 ## Using the HTTP API
 
 ### API Notes
+
 - Category names in `/train/:category` and `/untrain/:category` must match `^[-_A-Za-z0-9]{1,64}$`.
+- Invalid category path params return `400` with `{"error":"invalid request"}`.
 - Request body size is capped at 1 MiB.
 - Error responses are JSON: `{"error":"<message>"}`.
 - If `charset` is declared in `Content-Type`, it must be UTF-8.
 - The HTTP service stores classifier state in memory; process restarts clear training data.
+- Empty request bodies are accepted for `/train/:category` and `/untrain/:category`; this is a no-op for model token tallies.
 
 ### Common Error Responses
-| Status | When |
-| --- | --- |
-| `400` | Invalid payload (for example non-UTF-8 charset or non-text body) |
-| `401` | Missing/invalid bearer token when auth is enabled |
-| `404` | Invalid route or category route value |
-| `413` | Request body exceeds 1 MiB |
-| `500` | Unexpected server error |
+
+| Status | When                                                                                                        |
+| ------ | ----------------------------------------------------------------------------------------------------------- |
+| `400`  | Invalid payload or route params (for example non-UTF-8 charset, non-text body, or invalid category pattern) |
+| `401`  | Missing/invalid bearer token when auth is enabled                                                           |
+| `404`  | Invalid route                                                                                               |
+| `413`  | Request body exceeds 1 MiB                                                                                  |
+| `500`  | Unexpected server error                                                                                     |
 
 ### Training the Classifier
 
 ##### Endpoint:
+
 ```text
 /train/:category
 Example: /train/spam
@@ -131,6 +155,7 @@ Body: raw text/plain
 ```
 
 Example:
+
 ```bash
 curl -s -X POST "http://localhost:8000/train/spam" \
   -H "Content-Type: text/plain" \
@@ -140,6 +165,7 @@ curl -s -X POST "http://localhost:8000/train/spam" \
 ### Untraining the Classifier
 
 ##### Endpoint:
+
 ```text
 /untrain/:category
 Example: /untrain/spam
@@ -150,12 +176,14 @@ Body: raw text/plain
 ### Getting Classifier Status
 
 ##### Endpoint:
+
 ```text
 /info
 Accepts: GET
 ```
 
 Example response:
+
 ```json
 {
   "categories": [
@@ -170,6 +198,7 @@ Example response:
 ### Classifying Text
 
 ##### Endpoint:
+
 ```text
 /classify
 Accepts: POST
@@ -177,6 +206,7 @@ Body: raw text/plain
 ```
 
 Example response:
+
 ```json
 {
   "category": "spam",
@@ -189,6 +219,7 @@ If no category can be selected (for example, untrained model), `category` is ret
 ### Scoring Text
 
 ##### Endpoint:
+
 ```text
 /score
 Accepts: POST
@@ -196,6 +227,7 @@ Body: raw text/plain
 ```
 
 Example response:
+
 ```json
 {
   "spam": 3.2142857142857144,
@@ -206,6 +238,7 @@ Example response:
 ### Flushing Training Data
 
 ##### Endpoint:
+
 ```text
 /flush
 Accepts: POST
@@ -213,13 +246,16 @@ Body: raw text/plain (optional)
 ```
 
 ### Health and Readiness
+
 ##### Liveness endpoint
+
 ```text
 /healthz
 Accepts: GET
 ```
 
 ##### Readiness endpoint
+
 ```text
 /readyz
 Accepts: GET
@@ -228,6 +264,7 @@ Accepts: GET
 `/healthz` and `/readyz` are intentionally unauthenticated even when API auth is enabled.
 
 ## Operational Notes
+
 - The HTTP server is in-memory by default; deploys/restarts wipe trained state.
 - Use `saveToFile` and `loadFromFile` in library workflows to persist/reload model state.
 - `/readyz` returns `200` while accepting traffic and `503` when draining during shutdown.

@@ -6,5 +6,6 @@ All notable changes to this project are documented here.
 
 - Initial TypeScript implementation of the classifier core.
 - Added HTTP service with training, scoring, classification, and lifecycle endpoints.
+- Invalid `/train/:category` and `/untrain/:category` params now return `400` with `{"error":"invalid request"}`.
 - Added JSON model persistence with validation and atomic file writes.
 - Added strict testing, linting, and CI foundations.

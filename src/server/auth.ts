@@ -5,7 +5,11 @@ export function isProbePath(path: string): boolean {
   return path === "/healthz" || path === "/readyz";
 }
 
-export function checkAuthorization(token: string | null, request: FastifyRequest, reply: FastifyReply): boolean {
+export function checkAuthorization(
+  token: string | null,
+  request: FastifyRequest,
+  reply: FastifyReply
+): boolean {
   if (!token || isProbePath(request.url)) {
     return true;
   }
@@ -17,12 +21,13 @@ export function checkAuthorization(token: string | null, request: FastifyRequest
     return false;
   }
 
-  const [scheme, value] = header.split(" ", 2);
-  if (!scheme || !value || scheme.toLowerCase() !== "bearer") {
+  const match = /^Bearer ([^\s]+)$/i.exec(header.trim());
+  if (!match) {
     reply.header("WWW-Authenticate", "Bearer");
     reply.code(401).send({ error: "unauthorized" });
     return false;
   }
+  const value = match[1]!;
 
   if (!safeEqual(value, token)) {
     reply.header("WWW-Authenticate", "Bearer");

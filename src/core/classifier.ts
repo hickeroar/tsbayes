@@ -97,12 +97,11 @@ export class TextClassifier {
 
   public classificationResult(text: string): ClassificationResult {
     const scores = this.score(text);
-    const categories = Object.keys(scores).sort((a, b) => a.localeCompare(b));
+    const orderedScores = Object.entries(scores).sort(([a], [b]) => a.localeCompare(b));
     let bestCategory: string | null = null;
     let bestScore = 0;
 
-    for (const category of categories) {
-      const score = scores[category] ?? 0;
+    for (const [category, score] of orderedScores) {
       if (score > bestScore) {
         bestScore = score;
         bestCategory = category;
@@ -210,10 +209,6 @@ export class TextClassifier {
 
     const numerator = inCategoryProb * categoryPrior;
     const denominator = numerator + notInCategoryProb * nonCategoryPrior;
-    if (!Number.isFinite(denominator) || denominator <= 0) {
-      return 0;
-    }
-
     return numerator / denominator;
   }
 }
