@@ -8,9 +8,14 @@ interface CategoryState {
   tokens: Map<string, number>;
 }
 
+/**
+ * In-memory naive Bayes classifier for train/untrain/score/classify workflows.
+ * Scores are relative ranking values, not calibrated probabilities.
+ */
 export class TextClassifier {
   private readonly categories = new Map<string, CategoryState>();
 
+  /** Adds token counts from text into the target category. */
   public train(category: string, text: string): void {
     this.validateCategory(category);
     const tokens = tokenize(text);
@@ -24,6 +29,10 @@ export class TextClassifier {
     }
   }
 
+  /**
+   * Removes token counts contributed by text from a category.
+   * Missing categories/tokens are treated as no-ops.
+   */
   public untrain(category: string, text: string): void {
     this.validateCategory(category);
     const state = this.categories.get(category);
@@ -54,6 +63,7 @@ export class TextClassifier {
     }
   }
 
+  /** Returns per-category relative scores for the input text. */
   public score(text: string): Record<string, number> {
     const tokens = tokenize(text);
     const occurrences = countOccurrences(tokens);
@@ -65,6 +75,7 @@ export class TextClassifier {
     const scores = new Map<string, number>();
     for (const [token, occurrenceCount] of occurrences) {
       const tokenTotal = this.tokenTotal(token);
+      // Unknown tokens add no evidence to any category.
       if (tokenTotal <= 0) {
         continue;
       }
@@ -84,6 +95,7 @@ export class TextClassifier {
 
     const response: Record<string, number> = {};
     for (const [category, value] of scores) {
+      // Keep output aligned with reference behavior: only positive scores are emitted.
       if (value > 0) {
         response[category] = value;
       }
@@ -91,16 +103,19 @@ export class TextClassifier {
     return response;
   }
 
+  /** Convenience API returning only the predicted category. */
   public classify(text: string): string | null {
     return this.classificationResult(text).category;
   }
 
+  /** Returns top category plus score; ties resolve lexicographically. */
   public classificationResult(text: string): ClassificationResult {
     const scores = this.score(text);
     const orderedScores = Object.entries(scores).sort(([a], [b]) => a.localeCompare(b));
     let bestCategory: string | null = null;
     let bestScore = 0;
 
+    // We sort first so strict ">" makes tie results deterministic.
     for (const [category, score] of orderedScores) {
       if (score > bestScore) {
         bestScore = score;
@@ -111,10 +126,12 @@ export class TextClassifier {
     return { category: bestCategory, score: bestScore };
   }
 
+  /** Clears all trained model state. */
   public flush(): void {
     this.categories.clear();
   }
 
+  /** Summarizes trained categories in stable lexical order. */
   public categorySummaries(): CategorySummary[] {
     return [...this.categories.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
@@ -124,6 +141,7 @@ export class TextClassifier {
       }));
   }
 
+  /** Serializes classifier state into the versioned persistence model. */
   public save(): PersistedModelState {
     const categories: PersistedModelState["categories"] = {};
     for (const [name, state] of this.categories) {
@@ -139,6 +157,7 @@ export class TextClassifier {
     };
   }
 
+  /** Loads and validates a persisted model state into memory. */
   public load(model: PersistedModelState): void {
     validateModelState(model);
 
@@ -204,6 +223,7 @@ export class TextClassifier {
 
     const remainingTally = totalTally - categoryTally;
     const nonCategoryTokenCount = tokenTotal - tokenInCategory;
+    // If no non-category evidence exists, treat non-category probability as zero.
     const notInCategoryProb =
       remainingTally > 0 && nonCategoryTokenCount > 0 ? nonCategoryTokenCount / remainingTally : 0;
 
@@ -213,6 +233,7 @@ export class TextClassifier {
   }
 }
 
+/** Validates persisted model invariants before load. */
 export function validateModelState(model: PersistedModelState): void {
   if (model.version !== MODEL_VERSION) {
     throw new PersistenceError("unsupported model version");

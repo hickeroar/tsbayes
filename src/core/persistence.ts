@@ -7,6 +7,7 @@ import { PersistenceError } from "./errors.js";
 import type { TextClassifier } from "./classifier.js";
 import type { PersistedModelState } from "./types.js";
 
+/** Saves model state to disk via temp-write + rename for atomic replacement. */
 export async function saveToFile(
   classifier: TextClassifier,
   filePath = DEFAULT_MODEL_FILE_PATH
@@ -23,6 +24,7 @@ export async function saveToFile(
 
   try {
     await writeFile(tmpFile, payload, "utf8");
+    // fsync before rename to reduce the chance of partially persisted writes.
     const handle = await open(tmpFile, "r");
     try {
       await handle.sync();
@@ -35,6 +37,7 @@ export async function saveToFile(
   }
 }
 
+/** Loads model state from disk and validates structure before classifier-level validation. */
 export async function loadFromFile(
   classifier: TextClassifier,
   filePath = DEFAULT_MODEL_FILE_PATH
@@ -56,12 +59,14 @@ export async function loadFromFile(
   classifier.load(parsed);
 }
 
+/** Helper for tests and tooling that need an ephemeral persisted model file. */
 export async function saveToTempFile(classifier: TextClassifier): Promise<string> {
   const path = join(tmpdir(), `tsbayes-${Date.now()}.json`);
   await saveToFile(classifier, path);
   return path;
 }
 
+/** Fast runtime shape check so invalid JSON shapes fail with clear errors. */
 function isPersistedModelStateShape(value: unknown): value is PersistedModelState {
   if (!isRecord(value)) {
     return false;

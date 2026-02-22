@@ -3,7 +3,7 @@
 A memory-based, optional-persistence naive Bayesian text classification package and web API for TypeScript/Node.js.
 
 [![CI](https://github.com/hickeroar/tsbayes/actions/workflows/ci.yml/badge.svg)](https://github.com/hickeroar/tsbayes/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/tsbayes.svg)](https://www.npmjs.com/package/tsbayes)
+[![npm version](https://img.shields.io/npm/v/%40hickeroar%2Ftsbayes.svg)](https://www.npmjs.com/package/@hickeroar/tsbayes)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ---
@@ -30,7 +30,7 @@ Requires Node.js 20 or newer.
 Package usage:
 
 ```bash
-npm install tsbayes
+npm install @hickeroar/tsbayes
 ```
 
 Contributor/development setup:
@@ -75,7 +75,7 @@ Authorization: Bearer <token>
 Import and create a classifier:
 
 ```ts
-import { TextClassifier, loadFromFile, saveToFile } from "tsbayes";
+import { TextClassifier, loadFromFile, saveToFile } from "@hickeroar/tsbayes";
 
 const classifier = new TextClassifier();
 

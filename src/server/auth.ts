@@ -1,10 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
+/** Probe routes intentionally bypass auth checks. */
 export function isProbePath(path: string): boolean {
   return path === "/healthz" || path === "/readyz";
 }
 
+/** Validates bearer auth for protected routes and writes 401 responses when needed. */
 export function checkAuthorization(
   token: string | null,
   request: FastifyRequest,
@@ -38,6 +40,10 @@ export function checkAuthorization(
   return true;
 }
 
+/**
+ * Constant-time comparison for token equality.
+ * For mismatched lengths we still run timingSafeEqual on padded buffers.
+ */
 function safeEqual(left: string, right: string): boolean {
   const l = Buffer.from(left, "utf8");
   const r = Buffer.from(right, "utf8");

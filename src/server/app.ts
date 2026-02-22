@@ -33,6 +33,7 @@ export interface AppContext {
   readiness: Readiness;
 }
 
+/** Builds the Fastify app and wires classifier, auth, validation, and health endpoints. */
 export function createApp(options: AppOptions): AppContext {
   const classifier = options.classifier ?? new TextClassifier();
   const readiness = options.readiness ?? new Readiness();
@@ -42,11 +43,13 @@ export function createApp(options: AppOptions): AppContext {
     bodyLimit: MAX_BODY_SIZE_BYTES
   });
 
+  // Parse all payloads as UTF-8 text; endpoint handlers decide how to use content.
   app.addContentTypeParser("*", { parseAs: "buffer" }, (request, body, done) => {
     done(null, body.toString("utf8"));
   });
 
   app.addHook("onRequest", async (request, reply) => {
+    // Charset checks happen early so invalid content types fail consistently.
     const charset = parseCharset(request.headers["content-type"]);
     if (charset && charset.toLowerCase() !== "utf-8") {
       throw new ValidationError("content must be utf-8");
@@ -100,6 +103,7 @@ export function createApp(options: AppOptions): AppContext {
       return reply.code(400).send({ error: error.message });
     }
     if ((error as { code?: string }).code === "FST_ERR_VALIDATION") {
+      // Route-schema validation failures map to one stable API error.
       return reply.code(400).send({ error: "invalid request" });
     }
     if ((error as { code?: string }).code === "FST_ERR_CTP_BODY_TOO_LARGE") {
@@ -124,6 +128,7 @@ function bodyAsText(body: unknown): string {
   throw new ValidationError("body must be text");
 }
 
+/** Extracts optional charset from Content-Type (for example "text/plain; charset=utf-8"). */
 function parseCharset(contentType: string | undefined): string | null {
   if (!contentType) {
     return null;
