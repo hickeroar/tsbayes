@@ -1,0 +1,50 @@
+{
+  "name": "tsbayes",
+  "version": "0.1.0",
+  "description": "A trainable Bayesian text classifier library and HTTP service.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "tsbayes": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist coverage",
+    "start": "node dist/cli.js",
+    "dev": "tsx watch src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "precommit": "npm run lint && npm run typecheck && npm run test",
+    "standalone:audit": "node scripts/standalone-audit.mjs"
+  },
+  "dependencies": {
+    "fastify": "latest",
+    "snowball-stemmers": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/node": "latest",
+    "@vitest/coverage-v8": "latest",
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "prettier": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  }
+}
