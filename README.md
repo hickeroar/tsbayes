@@ -119,6 +119,13 @@ npm run build
 npm run standalone:audit
 ```
 
+Security checks used by CI:
+
+```bash
+npm audit --omit=dev --audit-level=high
+npm audit --audit-level=high
+```
+
 ---
 
 ## Using the HTTP API

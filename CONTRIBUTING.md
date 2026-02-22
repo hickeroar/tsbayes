@@ -51,3 +51,19 @@
   ```bash
   npm run prepublishOnly
   ```
+
+## Security Checks
+
+- CI blocks on production dependency vulnerabilities:
+
+  ```bash
+  npm audit --omit=dev --audit-level=high
+  ```
+
+- CI also records full dependency audit output for visibility:
+
+  ```bash
+  npm audit --audit-level=high
+  ```
+
+- Current lockfile also enforces `minimatch` via npm `overrides` in `package.json` for high-severity transitive vulnerability mitigation.
