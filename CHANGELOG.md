@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## [1.0.1] - 2026-02-22
+
+- Patch release metadata and workflow alignment updates.
+
 ## [1.0.0] - 2026-02-21
 
 - Initial TypeScript implementation of the classifier core.

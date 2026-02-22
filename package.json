@@ -1,18 +1,7 @@
 {
   "name": "@hickeroar/tsbayes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A trainable Bayesian text classifier library and HTTP service.",
-  "type": "module",
-  "author": "Ryan Vennell <ryan.vennell@gmail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hickeroar/tsbayes.git"
-  },
-  "homepage": "https://github.com/hickeroar/tsbayes#readme",
-  "bugs": {
-    "url": "https://github.com/hickeroar/tsbayes/issues"
-  },
   "keywords": [
     "bayes",
     "naive-bayes",
@@ -20,15 +9,30 @@
     "fastify",
     "typescript"
   ],
-  "bin": {
-    "tsbayes": "dist/cli.js"
+  "homepage": "https://github.com/hickeroar/tsbayes#readme",
+  "bugs": {
+    "url": "https://github.com/hickeroar/tsbayes/issues"
   },
-  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hickeroar/tsbayes.git"
+  },
+  "license": "MIT",
+  "author": "Ryan Vennell <ryan.vennell@gmail.com>",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "main": "index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "tsbayes": "dist/cli.js"
+  },
+  "directories": {
+    "test": "test"
   },
   "files": [
     "dist",
@@ -36,9 +40,6 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist coverage",
@@ -70,6 +71,9 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.56.0",
     "vitest": "4.0.18"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "overrides": {
     "minimatch": "^10.2.1"
