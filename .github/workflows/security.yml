@@ -33,7 +33,7 @@ jobs:
 
       - name: Upload full audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: npm-audit-full-report
           path: npm-audit-full.json
