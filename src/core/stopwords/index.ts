@@ -1,6 +1,6 @@
 /**
  * Stop words for languages supported by snowball-stemmers.
- * Data sourced from stopwords-iso (MIT) and simplebayes (Tamil).
+ * Data sourced from stopwords-iso (MIT) and other sources.
  * Languages match snowball-stemmers algorithms() exactly.
  */
 
@@ -38,7 +38,7 @@ const SNOWBALL_TO_ISO: Record<string, string> = {
   turkish: "tr"
 };
 
-// Tamil stopwords from simplebayes (stopwords-iso does not include Tamil)
+// Tamil stopwords (stopwords-iso does not include Tamil)
 // prettier-ignore
 const TAMIL_WORDS = [
   "அங்கு", "அங்கே", "அடுத்த", "அதனால்", "அதன்", "அதற்கு", "அதிக", "அதில்", "அது", "அதே", "அதை", "அந்த", "அந்தக்", "அந்தப்", "அன்று", "அல்லது", "அவன்", "அவரது", "அவர்", "அவர்கள்",

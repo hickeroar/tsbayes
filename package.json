@@ -1,6 +1,6 @@
 {
   "name": "@hickeroar/tsbayes",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "A trainable Bayesian text classifier library and HTTP service.",
   "keywords": [
     "bayes",
