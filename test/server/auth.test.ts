@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { isProbePath } from "../../src/server/auth.js";
 import { createApp } from "../../src/server/app.js";
 
 describe("auth paths", () => {
@@ -29,6 +30,16 @@ describe("auth paths", () => {
     expect(response.statusCode).toBe(401);
     expect(response.json()).toEqual({ error: "unauthorized" });
     await app.close();
+  });
+
+  it("isProbePath handles url with and without query string", () => {
+    expect(isProbePath("/healthz")).toBe(true);
+    expect(isProbePath("/healthz?x=1")).toBe(true);
+    expect(isProbePath("/readyz")).toBe(true);
+    expect(isProbePath("/readyz?foo=bar")).toBe(true);
+    expect(isProbePath("/api/train")).toBe(false);
+    expect(isProbePath("")).toBe(false);
+    expect(isProbePath(undefined as unknown as string)).toBe(false);
   });
 
   it("rejects short bearer token to cover constant-time mismatch path", async () => {

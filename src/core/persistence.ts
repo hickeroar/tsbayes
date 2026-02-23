@@ -101,6 +101,18 @@ function isPersistedModelStateShape(value: unknown): value is PersistedModelStat
     }
   }
 
+  if (value.tokenizer !== undefined) {
+    if (!isRecord(value.tokenizer)) {
+      return false;
+    }
+    if (typeof value.tokenizer.language !== "string" || value.tokenizer.language.length === 0) {
+      return false;
+    }
+    if (typeof value.tokenizer.removeStopWords !== "boolean") {
+      return false;
+    }
+  }
+
   return true;
 }
 

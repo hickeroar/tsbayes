@@ -1,11 +1,17 @@
 import { CATEGORY_PATTERN, MODEL_VERSION } from "./constants.js";
 import { PersistenceError, ValidationError } from "./errors.js";
-import { tokenize } from "./tokenizer.js";
+import { createTokenizer } from "./tokenizer.js";
 import type { CategorySummary, ClassificationResult, PersistedModelState } from "./types.js";
 
 interface CategoryState {
   tally: number;
   tokens: Map<string, number>;
+}
+
+export interface TextClassifierOptions {
+  tokenizer?: (text: string) => string[];
+  language?: string;
+  removeStopWords?: boolean;
 }
 
 /**
@@ -14,11 +20,28 @@ interface CategoryState {
  */
 export class TextClassifier {
   private readonly categories = new Map<string, CategoryState>();
+  private tokenizeText: (text: string) => string[];
+  private tokenizerLang: string | undefined;
+  private tokenizerRemoveStopWords: boolean | undefined;
+
+  public constructor(options?: TextClassifierOptions) {
+    if (options?.tokenizer) {
+      this.tokenizeText = options.tokenizer;
+      this.tokenizerLang = undefined;
+      this.tokenizerRemoveStopWords = undefined;
+    } else {
+      const lang = options?.language ?? "english";
+      const removeStopWords = options?.removeStopWords ?? false;
+      this.tokenizeText = createTokenizer({ language: lang, removeStopWords });
+      this.tokenizerLang = lang;
+      this.tokenizerRemoveStopWords = removeStopWords;
+    }
+  }
 
   /** Adds token counts from text into the target category. */
   public train(category: string, text: string): void {
     this.validateCategory(category);
-    const tokens = tokenize(text);
+    const tokens = this.tokenizeText(text);
     const tokenOccurrences = countOccurrences(tokens);
     const state = this.ensureCategory(category);
 
@@ -40,7 +63,7 @@ export class TextClassifier {
       return;
     }
 
-    const tokenOccurrences = countOccurrences(tokenize(text));
+    const tokenOccurrences = countOccurrences(this.tokenizeText(text));
     for (const [token, count] of tokenOccurrences) {
       const existing = state.tokens.get(token) ?? 0;
       if (existing <= 0) {
@@ -65,7 +88,7 @@ export class TextClassifier {
 
   /** Returns per-category relative scores for the input text. */
   public score(text: string): Record<string, number> {
-    const tokens = tokenize(text);
+    const tokens = this.tokenizeText(text);
     const occurrences = countOccurrences(tokens);
     const totalTally = this.totalTally();
     if (totalTally <= 0) {
@@ -151,10 +174,17 @@ export class TextClassifier {
       };
     }
 
-    return {
+    const result: PersistedModelState = {
       version: MODEL_VERSION,
       categories
     };
+    if (this.tokenizerLang !== undefined && this.tokenizerRemoveStopWords !== undefined) {
+      result.tokenizer = {
+        language: this.tokenizerLang,
+        removeStopWords: this.tokenizerRemoveStopWords
+      };
+    }
+    return result;
   }
 
   /** Loads and validates a persisted model state into memory. */
@@ -170,6 +200,15 @@ export class TextClassifier {
         tally += count;
       }
       this.categories.set(name, { tally, tokens });
+    }
+
+    if (model.tokenizer) {
+      this.tokenizeText = createTokenizer({
+        language: model.tokenizer.language,
+        removeStopWords: model.tokenizer.removeStopWords
+      });
+      this.tokenizerLang = model.tokenizer.language;
+      this.tokenizerRemoveStopWords = model.tokenizer.removeStopWords;
     }
   }
 

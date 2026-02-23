@@ -151,12 +151,84 @@ describe("persistence", () => {
     );
   });
 
+  it("rejects invalid tokenizer shape", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-tokenizer.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        version: 1,
+        categories: {},
+        tokenizer: "not-an-object"
+      }),
+      "utf8"
+    );
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects tokenizer with empty language", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-tokenizer-lang.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        version: 1,
+        categories: {},
+        tokenizer: { language: "", removeStopWords: false }
+      }),
+      "utf8"
+    );
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
+  it("rejects tokenizer with non-boolean removeStopWords", async () => {
+    const classifier = new TextClassifier();
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "invalid-tokenizer-bool.json");
+    await writeFile(
+      filePath,
+      JSON.stringify({
+        version: 1,
+        categories: {},
+        tokenizer: { language: "english", removeStopWords: "true" }
+      }),
+      "utf8"
+    );
+    await expect(loadFromFile(classifier, filePath)).rejects.toThrow(
+      "model file has invalid structure"
+    );
+  });
+
   it("rejects unsupported model version from file", async () => {
     const classifier = new TextClassifier();
     const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
     const filePath = join(dir, "unsupported-version.json");
     await writeFile(filePath, JSON.stringify({ version: 999, categories: {} }), "utf8");
     await expect(loadFromFile(classifier, filePath)).rejects.toThrow("unsupported model version");
+  });
+
+  it("round-trips tokenizer config through file", async () => {
+    const classifier = new TextClassifier({ language: "french", removeStopWords: true });
+    classifier.train("test", "le chat");
+
+    const dir = await mkdtemp(join(tmpdir(), "tsbayes-test-"));
+    const filePath = join(dir, "model.json");
+    await saveToFile(classifier, filePath);
+
+    const payload = await readFile(filePath, "utf8");
+    expect(payload).toContain('"tokenizer"');
+    expect(payload).toContain('"language":"french"');
+
+    const loaded = new TextClassifier();
+    await loadFromFile(loaded, filePath);
+    const saved = loaded.save();
+    expect(saved.tokenizer).toEqual({ language: "french", removeStopWords: true });
   });
 
   it("saves to generated temp file path", async () => {

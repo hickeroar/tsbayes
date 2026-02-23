@@ -62,9 +62,11 @@ Environment variables:
 TSBAYES_HOST
 TSBAYES_PORT
 TSBAYES_AUTH_TOKEN
+TSBAYES_LANGUAGE        default: "english" — stemmer language for the server classifier
+TSBAYES_REMOVE_STOP_WORDS   default: "false" — set to "true", "1", or "yes" to filter stop words
 ```
 
-When `TSBAYES_AUTH_TOKEN` is configured, all API endpoints except `/healthz` and `/readyz` require:
+When `TSBAYES_AUTH_TOKEN` is configured, all API endpoints except `/healthz` and `/readyz` (and their query-string variants, e.g. `/healthz?x=1`) require:
 
 ```text
 Authorization: Bearer <token>
@@ -102,6 +104,42 @@ Notes for library usage:
 - Scores are relative values; compare scores within the same model.
 - Default tokenization applies Unicode NFKC normalization, lowercasing, non-word splitting, and English stemming.
 - Category names accepted by `train` and `untrain` match `^[-_A-Za-z0-9]{1,64}$`.
+
+### Multi-language and stop words
+
+Supported languages match [snowball-stemmers](https://github.com/nicksrandall/node-snowball-stemmers) exactly (e.g. `english`, `spanish`, `french`, `german`, `tamil`). Use `supportedLanguages()` to list them.
+
+Create a custom tokenizer with `createTokenizer({ language?, removeStopWords? })`:
+
+```ts
+const tokenizer = createTokenizer({ language: "spanish", removeStopWords: true });
+const classifier = new TextClassifier({ tokenizer });
+// Or pass options directly:
+const classifier = new TextClassifier({ language: "spanish", removeStopWords: true });
+```
+
+When using `language` or `removeStopWords` options (not a custom tokenizer), persisted models store the tokenizer config; loading restores it.
+
+### Errors
+
+`ValidationError` and `PersistenceError` are thrown by:
+
+- `train` / `untrain` — invalid category names
+- `saveToFile` / `loadFromFile` — invalid paths or corrupted model state
+
+Import and use for typed error handling:
+
+```ts
+import { TextClassifier, ValidationError, PersistenceError } from "@hickeroar/tsbayes";
+
+try {
+  await loadFromFile(classifier, path);
+} catch (e) {
+  if (e instanceof PersistenceError) {
+    console.error("Model load failed:", e.message);
+  }
+}
+```
 
 File API notes:
 
@@ -268,7 +306,7 @@ Accepts: GET
 Accepts: GET
 ```
 
-`/healthz` and `/readyz` are intentionally unauthenticated even when API auth is enabled.
+`/healthz` and `/readyz` (including query-string variants like `/healthz?x=1`) are intentionally unauthenticated even when API auth is enabled.
 
 ## Operational Notes
 

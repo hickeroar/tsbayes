@@ -25,6 +25,8 @@ export interface AppOptions {
   authToken: string | null;
   classifier?: TextClassifier;
   readiness?: Readiness;
+  language?: string;
+  removeStopWords?: boolean;
 }
 
 export interface AppContext {
@@ -35,7 +37,12 @@ export interface AppContext {
 
 /** Builds the Fastify app and wires classifier, auth, validation, and health endpoints. */
 export function createApp(options: AppOptions): AppContext {
-  const classifier = options.classifier ?? new TextClassifier();
+  const classifier =
+    options.classifier ??
+    new TextClassifier({
+      language: options.language ?? "english",
+      removeStopWords: options.removeStopWords ?? false
+    });
   const readiness = options.readiness ?? new Readiness();
 
   const app = Fastify({
@@ -102,7 +109,10 @@ export function createApp(options: AppOptions): AppContext {
     if (error instanceof ValidationError) {
       return reply.code(400).send({ error: error.message });
     }
-    if ((error as { code?: string }).code === "FST_ERR_VALIDATION") {
+    if (
+      (error as { validation?: unknown }).validation ||
+      (error as { code?: string }).code === "FST_ERR_VALIDATION"
+    ) {
       // Route-schema validation failures map to one stable API error.
       return reply.code(400).send({ error: "invalid request" });
     }
