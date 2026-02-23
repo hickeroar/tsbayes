@@ -181,6 +181,39 @@ describe("TextClassifier", () => {
     ).toThrow(PersistenceError);
   });
 
+  it("accepts custom tokenizer override", () => {
+    const customTokenizer = (text: string) => text.toLowerCase().split(/\s+/).filter(Boolean);
+    const classifier = new TextClassifier({ tokenizer: customTokenizer });
+    classifier.train("test", "hello world");
+    expect(classifier.classificationResult("hello").category).toBe("test");
+  });
+
+  it("does not persist tokenizer when using custom tokenizer", () => {
+    const customTokenizer = (text: string) => text.split(/\s+/);
+    const classifier = new TextClassifier({ tokenizer: customTokenizer });
+    classifier.train("test", "hello");
+    const saved = classifier.save();
+    expect(saved.tokenizer).toBeUndefined();
+  });
+
+  it("accepts language and removeStopWords options", () => {
+    const classifier = new TextClassifier({ language: "spanish", removeStopWords: false });
+    classifier.train("test", "hola mundo");
+    expect(classifier.categorySummaries().length).toBe(1);
+  });
+
+  it("persists and restores tokenizer config", () => {
+    const classifier = new TextClassifier({ language: "spanish", removeStopWords: true });
+    classifier.train("test", "el gato");
+    const saved = classifier.save();
+    expect(saved.tokenizer).toEqual({ language: "spanish", removeStopWords: true });
+
+    const loaded = new TextClassifier();
+    loaded.load(saved);
+    const afterSave = loaded.save();
+    expect(afterSave.tokenizer).toEqual({ language: "spanish", removeStopWords: true });
+  });
+
   it("respects overridden score output ordering", () => {
     const classifier = new TextClassifier();
     Object.defineProperty(classifier, "score", {

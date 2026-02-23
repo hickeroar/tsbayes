@@ -102,6 +102,19 @@ describe("HTTP API", () => {
     await app.close();
   });
 
+  it("allows probe paths with query strings to bypass auth", async () => {
+    const { app } = createApp({ authToken: "secret-token" });
+    await app.ready();
+
+    const healthz = await app.inject({ method: "GET", url: "/healthz?x=1" });
+    expect(healthz.statusCode).toBe(200);
+
+    const readyz = await app.inject({ method: "GET", url: "/readyz?foo=bar" });
+    expect(readyz.statusCode).toBe(200);
+
+    await app.close();
+  });
+
   it("returns 503 when readiness is disabled", async () => {
     const readiness = new Readiness();
     const { app } = createApp({ authToken: null, readiness });

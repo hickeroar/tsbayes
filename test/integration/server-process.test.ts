@@ -15,7 +15,9 @@ describe("server process", () => {
     const context = await startServer({
       host: "127.0.0.1",
       port,
-      authToken: null
+      authToken: null,
+      language: "english",
+      removeStopWords: false
     });
     contexts.push(context);
 

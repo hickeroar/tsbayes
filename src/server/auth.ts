@@ -2,7 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 /** Probe routes intentionally bypass auth checks. */
-export function isProbePath(path: string): boolean {
+export function isProbePath(url: string): boolean {
+  const path = (url ?? "").split("?")[0] ?? "/";
   return path === "/healthz" || path === "/readyz";
 }
 

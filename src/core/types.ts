@@ -13,7 +13,13 @@ export interface PersistedCategoryState {
   tokens: Record<string, number>;
 }
 
+export interface PersistedTokenizerConfig {
+  language: string;
+  removeStopWords: boolean;
+}
+
 export interface PersistedModelState {
   version: number;
   categories: Record<string, PersistedCategoryState>;
+  tokenizer?: PersistedTokenizerConfig;
 }

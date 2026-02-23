@@ -3,5 +3,6 @@ declare module "snowball-stemmers" {
     stem(word: string): string;
   }
 
+  export function algorithms(): string[];
   export function newStemmer(language: string): Stemmer;
 }

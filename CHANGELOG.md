@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [1.2.0] - 2026-02-23
+
+- Multi-language stemming and stop words (createTokenizer, TextClassifier language/removeStopWords options).
+- Stop words module with get(), supported(), supportedLanguages() (languages match snowball-stemmers exactly).
+- Tokenizer config persisted in model state when using language options.
+- Exported ValidationError and PersistenceError for typed error handling.
+- Fixed Error prototype chain in custom error classes.
+- Auth probe path now handles query strings (e.g. /healthz?x=1 bypasses auth).
+- Fastify validation error handling checks error.validation.
+- Server env vars: TSBAYES_LANGUAGE, TSBAYES_REMOVE_STOP_WORDS.
+
 ## [1.0.1] - 2026-02-22
 
 - Patch release metadata and workflow alignment updates.
