@@ -17,7 +17,8 @@ describe("server process", () => {
       port,
       authToken: null,
       language: "english",
-      removeStopWords: false
+      removeStopWords: false,
+      verbose: false
     });
     contexts.push(context);
 

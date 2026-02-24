@@ -11,7 +11,8 @@ describe("loadConfig", () => {
       port: 8000,
       authToken: null,
       language: "english",
-      removeStopWords: false
+      removeStopWords: false,
+      verbose: false
     });
   });
 
@@ -28,8 +29,17 @@ describe("loadConfig", () => {
       port: 9000,
       authToken: "secret",
       language: "spanish",
-      removeStopWords: true
+      removeStopWords: true,
+      verbose: false
     });
+  });
+
+  it("parses TSBAYES_VERBOSE as boolean", () => {
+    expect(loadConfig({ TSBAYES_VERBOSE: "true" }).verbose).toBe(true);
+    expect(loadConfig({ TSBAYES_VERBOSE: "1" }).verbose).toBe(true);
+    expect(loadConfig({ TSBAYES_VERBOSE: "yes" }).verbose).toBe(true);
+    expect(loadConfig({}).verbose).toBe(false);
+    expect(loadConfig({ TSBAYES_VERBOSE: "0" }).verbose).toBe(false);
   });
 
   it("parses TSBAYES_REMOVE_STOP_WORDS as boolean", () => {
@@ -37,6 +47,11 @@ describe("loadConfig", () => {
     expect(loadConfig({ TSBAYES_REMOVE_STOP_WORDS: "yes" }).removeStopWords).toBe(true);
     expect(loadConfig({ TSBAYES_REMOVE_STOP_WORDS: "0" }).removeStopWords).toBe(false);
     expect(loadConfig({}).removeStopWords).toBe(false);
+  });
+
+  it("uses english when TSBAYES_LANGUAGE is whitespace-only", () => {
+    const config = loadConfig({ TSBAYES_LANGUAGE: "   " });
+    expect(config.language).toBe("english");
   });
 
   it("rejects invalid port values", () => {

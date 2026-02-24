@@ -3,7 +3,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 
 /** Probe routes intentionally bypass auth checks. */
 export function isProbePath(url: string): boolean {
-  const path = (url ?? "").split("?")[0] ?? "/";
+  const path = (url ?? "").split("?")[0];
   return path === "/healthz" || path === "/readyz";
 }
 
