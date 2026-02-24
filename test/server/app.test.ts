@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Readiness } from "../../src/server/readiness.js";
 import { createApp } from "../../src/server/app.js";
@@ -294,6 +294,145 @@ describe("HTTP API", () => {
     });
     expect(response.statusCode).toBe(401);
     expect(response.json()).toEqual({ error: "unauthorized" });
+    await app.close();
+  });
+
+  it("verbose mode logs classify tokens and scores", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { app } = createApp({ authToken: null, verbose: true });
+    await app.ready();
+
+    await app.inject({
+      method: "POST",
+      url: "/train/pets",
+      payload: "cats are lovely"
+    });
+    await app.inject({
+      method: "POST",
+      url: "/classify",
+      payload: "cats are lovely"
+    });
+
+    const output = errorSpy.mock.calls.map((c) => c.join(" ")).join(" ");
+    expect(output).toContain("classify");
+    expect(output).toContain("tokens=");
+    expect(output).toContain("scores=");
+    expect(output).toContain("category=");
+
+    errorSpy.mockRestore();
+    await app.close();
+  });
+
+  it("verbose mode logs score tokens and scores", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { app } = createApp({ authToken: null, verbose: true });
+    await app.ready();
+
+    await app.inject({
+      method: "POST",
+      url: "/train/tech",
+      payload: "servers"
+    });
+    await app.inject({
+      method: "POST",
+      url: "/score",
+      payload: "servers"
+    });
+
+    const output = errorSpy.mock.calls.map((c) => c.join(" ")).join(" ");
+    expect(output).toContain("score");
+    expect(output).toContain("tokens=");
+    expect(output).toContain("scores=");
+
+    errorSpy.mockRestore();
+    await app.close();
+  });
+
+  it("verbose mode logs train category and body", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { app } = createApp({ authToken: null, verbose: true });
+    await app.ready();
+
+    await app.inject({
+      method: "POST",
+      url: "/train/pets",
+      payload: "cats and dogs"
+    });
+
+    const output = errorSpy.mock.calls.map((c) => c.join(" ")).join(" ");
+    expect(output).toContain("train");
+    expect(output).toContain("pets");
+    expect(output).toContain("cats and dogs");
+
+    errorSpy.mockRestore();
+    await app.close();
+  });
+
+  it("verbose mode logs untrain category and body", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { app } = createApp({ authToken: null, verbose: true });
+    await app.ready();
+
+    await app.inject({
+      method: "POST",
+      url: "/train/spam",
+      payload: "buy now"
+    });
+    await app.inject({
+      method: "POST",
+      url: "/untrain/spam",
+      payload: "buy now"
+    });
+
+    const output = errorSpy.mock.calls.map((c) => c.join(" ")).join(" ");
+    expect(output).toContain("untrain");
+    expect(output).toContain("spam");
+    expect(output).toContain("buy now");
+
+    errorSpy.mockRestore();
+    await app.close();
+  });
+
+  it("verbose mode handles null body in preValidation for GET", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { app } = createApp({ authToken: null, verbose: true });
+    await app.ready();
+
+    await app.inject({ method: "GET", url: "/healthz" });
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+    await app.close();
+  });
+
+  it("verbose mode handles non-string body in preValidation", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { app } = createApp({ authToken: null, verbose: true });
+    await app.ready();
+
+    await app.inject({
+      method: "POST",
+      url: "/classify",
+      payload: { value: "hello" },
+      headers: { "content-type": "application/json" }
+    });
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+    await app.close();
+  });
+
+  it("verbose false responds without verbose hooks", async () => {
+    const { app } = createApp({ authToken: null, verbose: false });
+    await app.ready();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/classify",
+      payload: "cats"
+    });
+
+    expect(response.statusCode).toBe(200);
     await app.close();
   });
 

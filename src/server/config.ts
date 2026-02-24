@@ -6,6 +6,7 @@ export interface ServerConfig {
   authToken: string | null;
   language: string;
   removeStopWords: boolean;
+  verbose: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv): ServerConfig {
@@ -14,13 +15,15 @@ export function loadConfig(env: NodeJS.ProcessEnv): ServerConfig {
   const authToken = (env.TSBAYES_AUTH_TOKEN ?? "").trim();
   const language = (env.TSBAYES_LANGUAGE ?? "english").trim().toLowerCase() || "english";
   const removeStopWords = parseBool(env.TSBAYES_REMOVE_STOP_WORDS ?? "false");
+  const verbose = parseBool(env.TSBAYES_VERBOSE ?? "false");
 
   return {
     host,
     port,
     authToken: authToken.length > 0 ? authToken : null,
     language,
-    removeStopWords
+    removeStopWords,
+    verbose
   };
 }
 

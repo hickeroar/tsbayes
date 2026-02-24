@@ -5,7 +5,8 @@ export async function startServer(config: ServerConfig): Promise<AppContext> {
   const context = createApp({
     authToken: config.authToken,
     language: config.language,
-    removeStopWords: config.removeStopWords
+    removeStopWords: config.removeStopWords,
+    verbose: config.verbose
   });
   await context.app.listen({
     host: config.host,

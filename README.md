@@ -45,25 +45,74 @@ npm ci
 
 ## Run as an API Server
 
+See [Running the Server](#running-the-server) for all run methods. CLI options override environment variables.
+
 ```bash
 npm run dev
 ```
 
-Production-style run:
+---
+
+## Running the Server
+
+### Global install
+
+```bash
+npm install -g @hickeroar/tsbayes
+tsbayes
+tsbayes --port 3000 --verbose
+```
+
+### Local install (non-global)
+
+```bash
+npm install @hickeroar/tsbayes
+npx tsbayes
+# or
+./node_modules/.bin/tsbayes
+```
+
+### From source (npm run start)
 
 ```bash
 npm run build
 npm run start
+npm run start -- --port 3000
 ```
 
-Environment variables:
+### Environment variables
+
+```bash
+TSBAYES_PORT=9000 TSBAYES_VERBOSE=true tsbayes
+```
+
+### Help
+
+```bash
+tsbayes --help
+```
+
+### CLI options
+
+| Option                 | Short | Description                                     |
+| ---------------------- | ----- | ----------------------------------------------- |
+| `-h, --help`           |       | Show help                                       |
+| `-v, --verbose`        |       | Log requests, responses, and classifier details |
+| `--host <host>`        |       | Listen host (default: 0.0.0.0)                  |
+| `--port <port>`        |       | Listen port (default: 8000)                     |
+| `--auth-token <token>` |       | Bearer token for API auth                       |
+| `--language <lang>`    |       | Stemmer language (default: english)             |
+| `--remove-stop-words`  |       | Filter stop words                               |
+
+### Environment variables (overridden by CLI)
 
 ```text
-TSBAYES_HOST
-TSBAYES_PORT
+TSBAYES_HOST             default: "0.0.0.0"
+TSBAYES_PORT             default: "8000"
 TSBAYES_AUTH_TOKEN
-TSBAYES_LANGUAGE        default: "english" — stemmer language for the server classifier
+TSBAYES_LANGUAGE         default: "english" — stemmer language for the server classifier
 TSBAYES_REMOVE_STOP_WORDS   default: "false" — set to "true", "1", or "yes" to filter stop words
+TSBAYES_VERBOSE          default: "false" — set to "true", "1", or "yes" for request/response logging
 ```
 
 When `TSBAYES_AUTH_TOKEN` is configured, all API endpoints except `/healthz` and `/readyz` (and their query-string variants, e.g. `/healthz?x=1`) require:
@@ -154,7 +203,6 @@ npm run lint
 npm run typecheck
 npm run test:coverage
 npm run build
-npm run standalone:audit
 ```
 
 Security checks used by CI:

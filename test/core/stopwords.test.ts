@@ -1,4 +1,35 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("snowball-stemmers", () => ({
+  algorithms: () => [
+    "unmappedlang",
+    "arabic",
+    "armenian",
+    "basque",
+    "catalan",
+    "czech",
+    "danish",
+    "dutch",
+    "english",
+    "finnish",
+    "french",
+    "german",
+    "hungarian",
+    "italian",
+    "irish",
+    "norwegian",
+    "porter",
+    "portuguese",
+    "romanian",
+    "russian",
+    "spanish",
+    "slovene",
+    "swedish",
+    "tamil",
+    "turkish"
+  ],
+  newStemmer: () => ({ stem: (w: string) => w })
+}));
 
 import { get, supported, supportedLanguages } from "../../src/core/stopwords/index.js";
 
@@ -33,6 +64,13 @@ describe("stopwords", () => {
 
   it("get returns null for unsupported language", () => {
     expect(get("nosuchlang")).toBeNull();
+  });
+
+  it("get returns empty set for unmapped algorithm language", () => {
+    const set = get("unmappedlang");
+    expect(set).not.toBeNull();
+    expect(set).toBeInstanceOf(Set);
+    expect(set!.size).toBe(0);
   });
 
   it("get returns set for tamil", () => {

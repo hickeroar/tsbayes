@@ -49,6 +49,66 @@ describe("cli process", () => {
     }
   });
 
+  it("--help exits 0 and prints help without starting server", () => {
+    const result = spawnSync(process.execPath, [CLI_ENTRY, "--help"], {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8"
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Usage:");
+    expect(result.stdout).toContain("tsbayes");
+    expect(result.stdout).toContain("Options");
+  });
+
+  it("--port and --host start server on specified address", async () => {
+    const port = randomPort();
+    const child = spawn(
+      process.execPath,
+      [CLI_ENTRY, "--port", String(port), "--host", "127.0.0.1"],
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, TSBAYES_AUTH_TOKEN: "" },
+        stdio: "ignore"
+      }
+    );
+
+    try {
+      await waitForReady(`http://127.0.0.1:${port}/healthz`);
+      const response = await fetch(`http://127.0.0.1:${port}/readyz`);
+      expect(response.status).toBe(200);
+    } finally {
+      child.kill("SIGTERM");
+      await waitForExit(child, EXIT_TIMEOUT_MS);
+    }
+  });
+
+  it("starts server with --verbose and responds", async () => {
+    const port = randomPort();
+    const child = spawn(
+      process.execPath,
+      [CLI_ENTRY, "--port", String(port), "--host", "127.0.0.1", "--verbose"],
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, TSBAYES_AUTH_TOKEN: "" },
+        stdio: "ignore"
+      }
+    );
+
+    try {
+      await waitForReady(`http://127.0.0.1:${port}/healthz`);
+      const response = await fetch(`http://127.0.0.1:${port}/classify`, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: "cats"
+      });
+      expect(response.status).toBe(200);
+    } finally {
+      child.kill("SIGTERM");
+      await waitForExit(child, EXIT_TIMEOUT_MS);
+    }
+  });
+
   it("exits with non-zero status on invalid configuration", async () => {
     const child = spawn(process.execPath, [CLI_ENTRY], {
       cwd: process.cwd(),

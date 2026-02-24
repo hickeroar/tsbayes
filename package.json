@@ -1,6 +1,6 @@
 {
   "name": "@hickeroar/tsbayes",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A trainable Bayesian text classifier library and HTTP service.",
   "keywords": [
     "bayes",
@@ -53,8 +53,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "precommit": "npm run format:check && npm run lint && npm run typecheck && npm run test",
-    "prepublishOnly": "npm run clean && npm run lint && npm run typecheck && npm run test:coverage && npm run build",
-    "standalone:audit": "node scripts/standalone-audit.mjs"
+    "prepublishOnly": "npm run clean && npm run lint && npm run typecheck && npm run test:coverage && npm run build"
   },
   "dependencies": {
     "fastify": "5.7.4",

@@ -3,10 +3,13 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { TextClassifier } from "../core/classifier.js";
 import { CATEGORY_PATTERN } from "../core/constants.js";
 import { ValidationError } from "../core/errors.js";
+import { createTokenizer } from "../core/tokenizer.js";
 import { Readiness } from "./readiness.js";
 import { checkAuthorization } from "./auth.js";
+import { truncate, verboseLog } from "./verbose-logger.js";
 
 const MAX_BODY_SIZE_BYTES = 1024 * 1024;
+const VERBOSE_BODY_MAX = 200;
 const CATEGORY_PARAMS_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -27,6 +30,7 @@ export interface AppOptions {
   readiness?: Readiness;
   language?: string;
   removeStopWords?: boolean;
+  verbose?: boolean;
 }
 
 export interface AppContext {
@@ -68,6 +72,26 @@ export function createApp(options: AppOptions): AppContext {
     return undefined;
   });
 
+  if (options.verbose) {
+    app.addHook("preValidation", async (request) => {
+      const body = bodyAsTextSafe(request.body);
+      verboseLog(
+        true,
+        request.method,
+        request.url,
+        'body="' + truncate(body, VERBOSE_BODY_MAX) + '"'
+      );
+      await Promise.resolve();
+    });
+
+    app.addHook("onSend", (request, reply, payload) => {
+      const statusCode = reply.statusCode;
+      const body = typeof payload === "string" ? payload : JSON.stringify(payload ?? "");
+      verboseLog(true, statusCode, truncate(body, VERBOSE_BODY_MAX));
+      return Promise.resolve(payload);
+    });
+  }
+
   app.get("/healthz", () => ({ status: "ok" }));
   app.get("/readyz", (request, reply) => {
     if (!readiness.isReady()) {
@@ -78,12 +102,24 @@ export function createApp(options: AppOptions): AppContext {
 
   app.get("/info", () => ({ categories: classifier.categorySummaries() }));
 
+  const lang = options.language ?? "english";
+  const removeStopWords = options.removeStopWords ?? false;
+
   app.post<{ Params: { category: string } }>(
     "/train/:category",
     { schema: { params: CATEGORY_PARAMS_SCHEMA } },
     async (request, reply) => {
       const { category } = request.params;
-      classifier.train(category, bodyAsText(request.body));
+      const body = bodyAsText(request.body);
+      classifier.train(category, body);
+      if (options.verbose) {
+        verboseLog(
+          true,
+          "train",
+          "category=" + category,
+          'body="' + truncate(body, VERBOSE_BODY_MAX) + '"'
+        );
+      }
       return reply.code(204).send();
     }
   );
@@ -93,13 +129,54 @@ export function createApp(options: AppOptions): AppContext {
     { schema: { params: CATEGORY_PARAMS_SCHEMA } },
     async (request, reply) => {
       const { category } = request.params;
-      classifier.untrain(category, bodyAsText(request.body));
+      const body = bodyAsText(request.body);
+      classifier.untrain(category, body);
+      if (options.verbose) {
+        verboseLog(
+          true,
+          "untrain",
+          "category=" + category,
+          'body="' + truncate(body, VERBOSE_BODY_MAX) + '"'
+        );
+      }
       return reply.code(204).send();
     }
   );
 
-  app.post("/classify", (request) => classifier.classificationResult(bodyAsText(request.body)));
-  app.post("/score", (request) => classifier.score(bodyAsText(request.body)));
+  app.post("/classify", (request) => {
+    const text = bodyAsText(request.body);
+    const result = classifier.classificationResult(text);
+    if (options.verbose) {
+      const tokenizer = createTokenizer({ language: lang, removeStopWords });
+      const tokens = tokenizer(text);
+      const scores = classifier.score(text);
+      verboseLog(
+        true,
+        "classify",
+        "tokens=" + JSON.stringify(tokens),
+        "scores=" + JSON.stringify(scores),
+        "category=" + result.category,
+        "score=" + result.score
+      );
+    }
+    return result;
+  });
+
+  app.post("/score", (request) => {
+    const text = bodyAsText(request.body);
+    const scores = classifier.score(text);
+    if (options.verbose) {
+      const tokenizer = createTokenizer({ language: lang, removeStopWords });
+      const tokens = tokenizer(text);
+      verboseLog(
+        true,
+        "score",
+        "tokens=" + JSON.stringify(tokens),
+        "scores=" + JSON.stringify(scores)
+      );
+    }
+    return scores;
+  });
   app.post("/flush", (request, reply) => {
     classifier.flush();
     return reply.code(204).send();
@@ -136,6 +213,16 @@ function bodyAsText(body: unknown): string {
     return body;
   }
   throw new ValidationError("body must be text");
+}
+
+function bodyAsTextSafe(body: unknown): string {
+  if (body == null) {
+    return "";
+  }
+  if (typeof body === "string") {
+    return body;
+  }
+  return "";
 }
 
 /** Extracts optional charset from Content-Type (for example "text/plain; charset=utf-8"). */

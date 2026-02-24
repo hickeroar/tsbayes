@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [1.3.0] - 2026-02-24
+
+- CLI options: `--host`, `--port`, `--auth-token`, `--language`, `--remove-stop-words`, `--verbose` (`-v`), `--help` (`-h`). CLI overrides environment variables.
+- Verbose mode: logs requests, responses, classifier tokens, and scores to stderr when `--verbose` or `TSBAYES_VERBOSE=true`.
+- Server env var: `TSBAYES_VERBOSE`.
+- README: new "Running the Server" section (global install, local install, npm run start), CLI options table.
+- Fixed coverage gaps and achieved 100% coverage (lines, functions, branches, statements).
+- Removed scripts folder and standalone-audit references.
+
 ## [1.2.0] - 2026-02-23
 
 - Multi-language stemming and stop words (createTokenizer, TextClassifier language/removeStopWords options).

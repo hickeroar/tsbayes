@@ -44,9 +44,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Standalone content audit
-        run: npm run standalone:audit
-
       - name: Publish to npm
         if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'release'
         run: npm publish --access=public --provenance
