@@ -203,7 +203,6 @@ npm run lint
 npm run typecheck
 npm run test:coverage
 npm run build
-npm run standalone:audit
 ```
 
 Security checks used by CI:

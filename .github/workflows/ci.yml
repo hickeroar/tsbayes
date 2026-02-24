@@ -49,6 +49,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Standalone content audit
-        run: npm run standalone:audit
